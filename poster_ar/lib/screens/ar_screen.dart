@@ -11,7 +11,6 @@ class ArScreen extends StatefulWidget {
   State<ArScreen> createState() => _ArScreenState();
 }
 
-//C:\temp\poster_ar
 class _ArScreenState extends State<ArScreen> {
   @override
   void initState() {
@@ -21,16 +20,22 @@ class _ArScreenState extends State<ArScreen> {
     });
   }
 
-  void _navigateToPaintScreen() {
+  Future<void> _navigateToPaintScreen() async {
     final arProvider = context.read<ArProvider>();
     if (arProvider.currentPoster != null) {
-      Navigator.push(
+      await arProvider.pauseCameraPreview();
+      if (!mounted) return;
+
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) =>
               PosterPaintScreen(poster: arProvider.currentPoster!),
         ),
       );
+
+      if (!mounted) return;
+      await arProvider.resumeCameraPreview();
     }
   }
 

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/drawing_point.dart';
 import '../models/poster.dart';
+import '../providers/auth_provider.dart';
+import '../providers/socket_provider.dart';
 import '../services/drawing_storage_service.dart';
 
 class PosterPaintScreen extends StatefulWidget {
@@ -87,6 +90,10 @@ class _PosterPaintScreenState extends State<PosterPaintScreen> {
   Future<void> _saveDrawing() async {
     if (_currentPoints.isEmpty || _isSaving) return;
 
+    final authProvider = context.read<AuthProvider>();
+    final socketProvider = context.read<SocketProvider>();
+    final currentUser = authProvider.user;
+
     setState(() {
       _isSaving = true;
     });
@@ -94,6 +101,32 @@ class _PosterPaintScreenState extends State<PosterPaintScreen> {
     try {
       final merged = [..._savedPoints, ..._currentPoints];
       await _storageService.saveDrawing(widget.poster.id, merged);
+
+      // Keep local save behavior unchanged, but also push vector data to backend.
+      if (currentUser != null && socketProvider.isConnected) {
+        final vectorPoints = _currentPoints
+            .map(
+              (point) => {
+                'dx': point.offset.dx,
+                'dy': point.offset.dy,
+                'color': point.color.toARGB32(),
+                'strokeWidth': point.strokeWidth,
+                'isNewStroke': point.isNewStroke,
+              },
+            )
+            .toList();
+
+        final firstPoint = _currentPoints.first;
+        socketProvider.socketService.saveDrawing(
+          posterId: widget.poster.id,
+          dbUserId: currentUser.id,
+          completeLineJSON: vectorPoints,
+          color:
+              '#${firstPoint.color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
+          size: firstPoint.strokeWidth.round(),
+        );
+      }
+
       if (!mounted) return;
 
       setState(() {

@@ -1,8 +1,22 @@
 import { prisma } from '../config/prisma.js';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 // Regex simplu pentru formatul standard (text@text.ext)
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const createAccessToken = (user) => {
+  const secret = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
+  return jwt.sign(
+    {
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+    },
+    secret,
+    { expiresIn: '7d' },
+  );
+};
 
 // ---- REGISTER NEW USER ----
 export const registerUser = async (req, res) => {
@@ -43,8 +57,11 @@ export const registerUser = async (req, res) => {
       }
     });
 
+    const token = createAccessToken(newUser);
+
     res.status(201).json({ 
       message: "User created successfully",
+      token,
       user: {
         id: newUser.id,
         name: newUser.name,
@@ -84,9 +101,12 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ error: "Invalid email or password" });
     } 
     
+    const token = createAccessToken(user);
+
     // Return user object without the password
     res.status(200).json({ 
-      message: "Authentication successful (No JWT for now)",
+      message: "Authentication successful",
+      token,
       user: {
         id: user.id,
         name: user.name,
