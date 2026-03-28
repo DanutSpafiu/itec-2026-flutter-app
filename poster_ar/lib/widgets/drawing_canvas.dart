@@ -22,7 +22,7 @@ class DrawingCanvas extends StatelessWidget {
           ? (details) => onPanStart!(details.localPosition)
           : null,
       onPanUpdate: enabled && onPanUpdate != null
-          ? (details) => onPanUpdate!(details.localPosition)
+          ? (details) =>onPanUpdate!(details.localPosition) 
           : null,
       child: CustomPaint(
         painter: _DrawingPainter(points: points),
@@ -82,3 +82,4 @@ class _DrawingPainter extends CustomPainter {
     return oldDelegate.points.length != points.length;
   }
 }
+

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/drawing_point.dart';
 import '../models/poster.dart';
 import '../services/drawing_storage_service.dart';
+//non-AI
+import 'package:vibration/vibration.dart';
 
 class PosterPaintScreen extends StatefulWidget {
   final Poster poster;
@@ -61,6 +63,10 @@ class _PosterPaintScreenState extends State<PosterPaintScreen> {
           isNewStroke: false,
         ),
       );
+        ////////////////////////
+        debugPrint("DRAWING\n");
+        Vibration.vibrate(amplitude: 64, duration: 10);
+        ////////////////////////////
     });
   }
 

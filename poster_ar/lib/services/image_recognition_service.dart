@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 import '../models/poster.dart';
+//non-AI imports
+import 'package:vibration/vibration.dart';
 
 class ImageRecognitionService {
   final Map<String, _PosterSignature> _posterSignatures = {};
@@ -68,6 +70,23 @@ class ImageRecognitionService {
           bestMatch = entry.key;
         }
       }
+      /////////////////////////////
+      if(bestMatch != null)
+      {
+        /////////////////////////////
+        if (await Vibration.hasVibrator()) {
+          if (await Vibration.hasCustomVibrationsSupport() &&
+              await Vibration.hasAmplitudeControl()) {
+            Vibration.vibrate(amplitude: 128, duration: 500);
+          } else {
+            Vibration.vibrate();
+            Future.delayed(Duration(milliseconds: 500));
+            Vibration.vibrate();
+          }
+        }
+        ////////////////////////////
+      }
+      /////////////////////////////
 
       return bestMatch;
     } catch (e) {

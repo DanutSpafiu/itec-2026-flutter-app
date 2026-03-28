@@ -42,6 +42,7 @@ class CameraService {
     }
     try {
       return await _controller!.takePicture();
+
     } catch (e) {
       debugPrint('Error taking picture: $e');
       return null;
