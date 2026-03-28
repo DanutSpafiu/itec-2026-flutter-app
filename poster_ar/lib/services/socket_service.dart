@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 class DrawingLine {
@@ -18,12 +20,27 @@ class DrawingLine {
   });
 
   factory DrawingLine.fromJson(Map<String, dynamic> json) {
+    // Server may send points under different keys (linesData, points)
+    final rawPoints = json['points'] ?? json['linesData'] ?? [];
+    List<Map<String, dynamic>> normalizedPoints = [];
+    if (rawPoints is List) {
+      for (final p in rawPoints) {
+        if (p is Map<String, dynamic>) {
+          normalizedPoints.add(p);
+        } else if (p is Map) {
+          normalizedPoints.add(Map<String, dynamic>.from(p));
+        } else {
+          // ignore other types
+        }
+      }
+    }
+
     return DrawingLine(
-      points: List<Map<String, dynamic>>.from(json['points'] ?? []),
+      points: normalizedPoints,
       color: json['color'] ?? '#FF6B6B',
       size: json['size'] ?? 12,
-      userId: json['user']?['id'] ?? '',
-      userName: json['user']?['name'],
+      userId: json['user']?['id'] ?? json['userId'] ?? '',
+      userName: json['user']?['name'] ?? json['userName'],
     );
   }
 }
@@ -31,10 +48,28 @@ class DrawingLine {
 class SocketService {
   // For physical Android devices on USB, keep localhost and run adb reverse.
   // For Wi-Fi testing, pass --dart-define=SOCKET_SERVER_URL=http://<PC_IP>:3000
-  static const String _serverUrl = String.fromEnvironment(
-    'SOCKET_SERVER_URL',
-    defaultValue: 'http://localhost:3000',
-  );
+  static String get _serverUrl {
+    // Order of precedence:
+    // 1. .env (flutter_dotenv)
+    // 2. --dart-define=SOCKET_SERVER_URL
+    // 3. Android emulator special host
+    // 4. localhost
+    final envDot = dotenv.env['SOCKET_SERVER_URL'];
+    if (envDot != null && envDot.isNotEmpty) return envDot;
+
+    const envDefine = String.fromEnvironment('SOCKET_SERVER_URL');
+    if (envDefine.isNotEmpty) return envDefine;
+
+    if (!kIsWeb) {
+      try {
+        if (Platform.isAndroid) return 'http://10.0.2.2:3000';
+      } catch (e) {
+        // fallback
+      }
+    }
+
+    return 'http://localhost:3000';
+  }
 
   io.Socket? _socket;
   String? _userId;

@@ -133,6 +133,41 @@ class ArProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Populate saved drawing points from a remote source (socket / DB)
+  void updateSavedDrawingFromRemote(List<dynamic> drawings) {
+    final merged = <DrawingPoint>[];
+    for (final d in drawings) {
+      // server may send graffiti with `linesData` or `points`
+      final lines = d['linesData'] ?? d['points'] ?? [];
+      if (lines is List) {
+        for (final p in lines) {
+          try {
+            merged.add(DrawingPoint.fromJson(p as Map<String, dynamic>));
+          } catch (e) {
+            // ignore malformed points
+          }
+        }
+      }
+    }
+
+    _savedDrawingPoints = merged;
+    notifyListeners();
+  }
+
+  void appendSavedDrawingFromRemote(Map<String, dynamic> drawing) {
+    final lines = drawing['linesData'] ?? drawing['points'] ?? [];
+    if (lines is List) {
+      for (final p in lines) {
+        try {
+          _savedDrawingPoints.add(
+            DrawingPoint.fromJson(p as Map<String, dynamic>),
+          );
+        } catch (e) {}
+      }
+      notifyListeners();
+    }
+  }
+
   Future<void> clearSavedDrawing() async {
     if (_recognizedPosterId == null) return;
 
