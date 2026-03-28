@@ -48,6 +48,30 @@ class CameraService {
     }
   }
 
+  Future<void> pausePreview() async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+    if (controller.value.isPreviewPaused) return;
+
+    try {
+      await controller.pausePreview();
+    } catch (e) {
+      debugPrint('Error pausing camera preview: $e');
+    }
+  }
+
+  Future<void> resumePreview() async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+    if (!controller.value.isPreviewPaused) return;
+
+    try {
+      await controller.resumePreview();
+    } catch (e) {
+      debugPrint('Error resuming camera preview: $e');
+    }
+  }
+
   CameraImage? get latestImage => null;
 
   void dispose() {

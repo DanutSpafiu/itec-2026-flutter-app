@@ -91,6 +91,14 @@ class ArProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> pauseCameraPreview() async {
+    await _cameraService.pausePreview();
+  }
+
+  Future<void> resumeCameraPreview() async {
+    await _cameraService.resumePreview();
+  }
+
   void startDrawing() {
     if (_recognizedPosterId == null) return;
     _state = ArState.drawing;
