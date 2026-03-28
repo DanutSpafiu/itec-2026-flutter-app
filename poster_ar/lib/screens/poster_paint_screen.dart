@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/drawing_point.dart';
 import '../models/poster.dart';
 import '../services/drawing_storage_service.dart';
+import '../providers/socket_provider.dart';
+import '../services/socket_service.dart';
+import 'dart:async';
 
 class PosterPaintScreen extends StatefulWidget {
   final Poster poster;
@@ -22,11 +26,57 @@ class _PosterPaintScreenState extends State<PosterPaintScreen> {
   double _strokeWidth = 8.0;
   bool _isLoading = true;
   bool _isSaving = false;
+  SocketService? _socketService;
+  StreamSubscription? _historySub;
+  StreamSubscription? _remoteSaveSub;
 
   @override
   void initState() {
     super.initState();
     _loadDrawing();
+    // Join socket room if connected and subscribe to history/remote saves
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        final sp = context.read<SocketProvider>();
+        _socketService = sp.socketService;
+        if (_socketService != null && _socketService!.isConnected) {
+          _socketService!.joinPosterRoom(widget.poster.id);
+
+          _historySub = _socketService!.drawingHistoryStream.listen((drawings) {
+            // drawings are DrawingLine instances
+            final merged = <DrawingPoint>[];
+            for (final d in drawings) {
+              final pts = (d as dynamic).points as List? ?? [];
+              for (final p in pts) {
+                try {
+                  merged.add(DrawingPoint.fromJson(p as Map<String, dynamic>));
+                } catch (e) {}
+              }
+            }
+            setState(() {
+              _savedPoints = merged;
+            });
+          });
+
+          _remoteSaveSub = _socketService!.remoteSaveStream.listen((dl) {
+            final pts = (dl as dynamic).points as List? ?? [];
+            final added = <DrawingPoint>[];
+            for (final p in pts) {
+              try {
+                added.add(DrawingPoint.fromJson(p as Map<String, dynamic>));
+              } catch (e) {}
+            }
+            if (added.isNotEmpty) {
+              setState(() {
+                _savedPoints = [..._savedPoints, ...added];
+              });
+            }
+          });
+        }
+      } catch (e) {
+        // ignore
+      }
+    });
   }
 
   Future<void> _loadDrawing() async {
@@ -49,6 +99,19 @@ class _PosterPaintScreenState extends State<PosterPaintScreen> {
         ),
       );
     });
+    // emit live line start
+    try {
+      if (_socketService != null && _socketService!.isConnected) {
+        final last = _currentPoints.last;
+        _socketService!.sendLiveLine(
+          posterId: widget.poster.id,
+          points: [last.toJson()],
+          color:
+              '#${_selectedColor.value.toRadixString(16).padLeft(8, '0').substring(2)}',
+          size: _strokeWidth.toInt(),
+        );
+      }
+    } catch (e) {}
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
@@ -62,6 +125,19 @@ class _PosterPaintScreenState extends State<PosterPaintScreen> {
         ),
       );
     });
+    // emit live point
+    try {
+      if (_socketService != null && _socketService!.isConnected) {
+        final last = _currentPoints.last;
+        _socketService!.sendLiveLine(
+          posterId: widget.poster.id,
+          points: [last.toJson()],
+          color:
+              '#${_selectedColor.value.toRadixString(16).padLeft(8, '0').substring(2)}',
+          size: _strokeWidth.toInt(),
+        );
+      }
+    } catch (e) {}
   }
 
   void _undoCurrentStroke() {
@@ -101,6 +177,26 @@ class _PosterPaintScreenState extends State<PosterPaintScreen> {
         _currentPoints = [];
       });
 
+      // Also emit to socket server so other devices receive and server saves to DB
+      try {
+        final socketService = context.read<SocketProvider>().socketService;
+        if (socketService.isConnected) {
+          final jsonPoints = merged.map((p) => p.toJson()).toList();
+          // convert color to hex #RRGGBB
+          final hex =
+              '#${_selectedColor.value.toRadixString(16).padLeft(8, '0').substring(2)}';
+          socketService.saveDrawing(
+            posterId: widget.poster.id,
+            dbUserId: socketService.userId ?? '',
+            completeLineJSON: jsonPoints,
+            color: hex,
+            size: _strokeWidth.toInt(),
+          );
+        }
+      } catch (e) {
+        // non-fatal
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Desenul a fost salvat pentru acest afiș.'),
@@ -123,6 +219,19 @@ class _PosterPaintScreenState extends State<PosterPaintScreen> {
         });
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _historySub?.cancel();
+    _remoteSaveSub?.cancel();
+    // leave room
+    try {
+      if (_socketService != null && _socketService!.isConnected) {
+        _socketService!.leavePosterRoom(widget.poster.id);
+      }
+    } catch (e) {}
+    super.dispose();
   }
 
   Future<void> _clearSavedDrawing() async {

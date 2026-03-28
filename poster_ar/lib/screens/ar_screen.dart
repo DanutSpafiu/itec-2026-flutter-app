@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import '../providers/ar_provider.dart';
+import '../providers/socket_provider.dart';
 import '../widgets/camera_preview_widget.dart';
 import 'poster_paint_screen.dart';
 
@@ -13,12 +15,22 @@ class ArScreen extends StatefulWidget {
 
 //C:\temp\poster_ar
 class _ArScreenState extends State<ArScreen> {
+  StreamSubscription? _historySub;
+  StreamSubscription? _remoteSaveSub;
+  bool _joinedRoom = false;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ArProvider>().initialize();
     });
+  }
+
+  @override
+  void dispose() {
+    _historySub?.cancel();
+    _remoteSaveSub?.cancel();
+    super.dispose();
   }
 
   void _navigateToPaintScreen() {
@@ -36,6 +48,8 @@ class _ArScreenState extends State<ArScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // When a poster is recognized we should join its socket room and listen
+    // for history / remote saves so drawings sync across devices.
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -48,6 +62,44 @@ class _ArScreenState extends State<ArScreen> {
       ),
       body: Consumer<ArProvider>(
         builder: (context, provider, child) {
+          // perform socket join/subscriptions outside of the children list
+          try {
+            final socketProvider = context.read<SocketProvider>();
+            final socketService = socketProvider.socketService;
+            if (provider.currentPoster != null &&
+                !_joinedRoom &&
+                socketService.isConnected) {
+              socketService.joinPosterRoom(provider.currentPoster!.id);
+              _joinedRoom = true;
+
+              _historySub = socketService.drawingHistoryStream.listen((
+                drawings,
+              ) {
+                final payload = drawings
+                    .map(
+                      (d) => {
+                        'points': (d as dynamic).points ?? [],
+                        'color': (d as dynamic).color,
+                        'size': (d as dynamic).size,
+                      },
+                    )
+                    .toList();
+                provider.updateSavedDrawingFromRemote(payload);
+              });
+
+              _remoteSaveSub = socketService.remoteSaveStream.listen((dl) {
+                final map = {
+                  'points': (dl as dynamic).points ?? [],
+                  'color': (dl as dynamic).color,
+                  'size': (dl as dynamic).size,
+                };
+                provider.appendSavedDrawingFromRemote(map);
+              });
+            }
+          } catch (e) {
+            // ignore
+          }
+
           return Stack(
             fit: StackFit.expand,
             children: [
