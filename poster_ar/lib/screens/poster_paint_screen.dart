@@ -29,6 +29,7 @@ class _PosterPaintScreenState extends State<PosterPaintScreen> {
   SocketService? _socketService;
   StreamSubscription? _historySub;
   StreamSubscription? _remoteSaveSub;
+  StreamSubscription<bool>? _connectionSub;
 
   @override
   void initState() {
@@ -38,43 +39,64 @@ class _PosterPaintScreenState extends State<PosterPaintScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
         final sp = context.read<SocketProvider>();
+        // Ensure socket provider is initialized when opening the paint screen
+        sp.initialize();
         _socketService = sp.socketService;
-        if (_socketService != null && _socketService!.isConnected) {
-          _socketService!.joinPosterRoom(widget.poster.id);
-
-          _historySub = _socketService!.drawingHistoryStream.listen((drawings) {
-            // drawings are DrawingLine instances
-            final merged = <DrawingPoint>[];
-            for (final d in drawings) {
-              final pts = (d as dynamic).points as List? ?? [];
-              for (final p in pts) {
-                try {
-                  merged.add(DrawingPoint.fromJson(p as Map<String, dynamic>));
-                } catch (e) {}
+        if (_socketService != null) {
+          // If already connected, join immediately; otherwise wait for connection
+          if (_socketService!.isConnected) {
+            _socketService!.joinPosterRoom(widget.poster.id);
+          } else {
+            _connectionSub = _socketService!.connectionStream.listen((
+              connected,
+            ) {
+              if (connected) {
+                _socketService!.joinPosterRoom(widget.poster.id);
+                _connectionSub?.cancel();
+                _connectionSub = null;
               }
-            }
-            setState(() {
-              _savedPoints = merged;
             });
-          });
+          }
 
-          _remoteSaveSub = _socketService!.remoteSaveStream.listen((dl) {
-            final pts = (dl as dynamic).points as List? ?? [];
-            final added = <DrawingPoint>[];
-            for (final p in pts) {
-              try {
-                added.add(DrawingPoint.fromJson(p as Map<String, dynamic>));
-              } catch (e) {}
-            }
-            if (added.isNotEmpty) {
-              setState(() {
-                _savedPoints = [..._savedPoints, ...added];
-              });
-            }
-          });
+          // Register listeners (idempotent)
+          _registerSocketListeners();
         }
       } catch (e) {
         // ignore
+      }
+    });
+  }
+
+  void _registerSocketListeners() {
+    if (_socketService == null) return;
+
+    _historySub ??= _socketService!.drawingHistoryStream.listen((drawings) {
+      final merged = <DrawingPoint>[];
+      for (final d in drawings) {
+        final pts = (d as dynamic).points as List? ?? [];
+        for (final p in pts) {
+          try {
+            merged.add(DrawingPoint.fromJson(p as Map<String, dynamic>));
+          } catch (e) {}
+        }
+      }
+      setState(() {
+        _savedPoints = merged;
+      });
+    });
+
+    _remoteSaveSub ??= _socketService!.remoteSaveStream.listen((dl) {
+      final pts = (dl as dynamic).points as List? ?? [];
+      final added = <DrawingPoint>[];
+      for (final p in pts) {
+        try {
+          added.add(DrawingPoint.fromJson(p as Map<String, dynamic>));
+        } catch (e) {}
+      }
+      if (added.isNotEmpty) {
+        setState(() {
+          _savedPoints = [..._savedPoints, ...added];
+        });
       }
     });
   }

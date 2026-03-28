@@ -20,12 +20,27 @@ class DrawingLine {
   });
 
   factory DrawingLine.fromJson(Map<String, dynamic> json) {
+    // Server may send points under different keys (linesData, points)
+    final rawPoints = json['points'] ?? json['linesData'] ?? [];
+    List<Map<String, dynamic>> normalizedPoints = [];
+    if (rawPoints is List) {
+      for (final p in rawPoints) {
+        if (p is Map<String, dynamic>) {
+          normalizedPoints.add(p);
+        } else if (p is Map) {
+          normalizedPoints.add(Map<String, dynamic>.from(p));
+        } else {
+          // ignore other types
+        }
+      }
+    }
+
     return DrawingLine(
-      points: List<Map<String, dynamic>>.from(json['points'] ?? []),
+      points: normalizedPoints,
       color: json['color'] ?? '#FF6B6B',
       size: json['size'] ?? 12,
-      userId: json['user']?['id'] ?? '',
-      userName: json['user']?['name'],
+      userId: json['user']?['id'] ?? json['userId'] ?? '',
+      userName: json['user']?['name'] ?? json['userName'],
     );
   }
 }
