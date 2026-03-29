@@ -1,45 +1,71 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
+# ---------- OS / Editor ----------
 .DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.log
 
-# IntelliJ related
+# IntelliJ / Android Studio
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code
+.vscode/
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# ---------- Dart / Flutter ----------
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
-.pub-cache/
 .pub/
-/build/
+.pub-cache/
+build/
 
-# Symbolication related
+# API docs and generated metadata
+doc/api/
+**/doc/api/
+*.lock
+!pubspec.lock
+
+# Flutter generated build markers
+**/ios/Flutter/.last_build_id
+
+# ---------- Symbolication / Obfuscation ----------
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# ---------- Android build outputs ----------
+android/.gradle/
+android/captures/
+android/app/debug/
+android/app/profile/
+android/app/release/
+
+# NDK / CMake
+android/.cxx/
+
+# Local Android machine config
+android/local.properties
+
+# Signing files (never commit)
+android/key.properties
+**/*.keystore
+**/*.jks
+
+# ---------- iOS / macOS (if added later) ----------
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+macos/Pods/
+
+# ---------- Optional local toolchains ----------
+.fvm/
+
+# ---------- Environment / Secrets ----------
+.env
+.env.*
+!.env.example
