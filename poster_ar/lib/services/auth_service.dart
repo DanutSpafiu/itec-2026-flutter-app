@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/auth_user.dart';
 
@@ -10,10 +13,23 @@ class AuthResult {
 }
 
 class AuthService {
-  static const String _apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:3000',
-  );
+  static String get _apiBaseUrl {
+    final envDot = dotenv.env['API_BASE_URL'];
+    if (envDot != null && envDot.isNotEmpty) return envDot;
+
+    const envDefine = String.fromEnvironment('API_BASE_URL');
+    if (envDefine.isNotEmpty) return envDefine;
+
+    if (!kIsWeb) {
+      try {
+        if (Platform.isAndroid) return 'http://10.0.2.2:3000';
+      } catch (_) {
+        // Fallback handled below.
+      }
+    }
+
+    return 'http://localhost:3000';
+  }
 
   Uri _uri(String path) => Uri.parse('$_apiBaseUrl$path');
 

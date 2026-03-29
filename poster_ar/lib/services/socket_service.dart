@@ -46,19 +46,26 @@ class DrawingLine {
 }
 
 class SocketService {
-  // For physical Android devices on USB, keep localhost and run adb reverse.
-  // For Wi-Fi testing, pass --dart-define=SOCKET_SERVER_URL=http://<PC_IP>:3000
+  // For Wi-Fi testing, use API_BASE_URL or SOCKET_SERVER_URL in .env.
   static String get _serverUrl {
     // Order of precedence:
     // 1. .env (flutter_dotenv)
     // 2. --dart-define=SOCKET_SERVER_URL
-    // 3. Android emulator special host
-    // 4. localhost
+    // 3. .env API_BASE_URL (shared with HTTP auth)
+    // 4. --dart-define=API_BASE_URL
+    // 5. Android emulator special host
+    // 6. localhost
     final envDot = dotenv.env['SOCKET_SERVER_URL'];
     if (envDot != null && envDot.isNotEmpty) return envDot;
 
     const envDefine = String.fromEnvironment('SOCKET_SERVER_URL');
     if (envDefine.isNotEmpty) return envDefine;
+
+    final apiDot = dotenv.env['API_BASE_URL'];
+    if (apiDot != null && apiDot.isNotEmpty) return apiDot;
+
+    const apiDefine = String.fromEnvironment('API_BASE_URL');
+    if (apiDefine.isNotEmpty) return apiDefine;
 
     if (!kIsWeb) {
       try {

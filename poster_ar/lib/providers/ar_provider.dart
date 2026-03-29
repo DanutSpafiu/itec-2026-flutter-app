@@ -162,6 +162,7 @@ class ArProvider extends ChangeNotifier {
           _savedDrawingPoints.add(
             DrawingPoint.fromJson(p as Map<String, dynamic>),
           );
+        // ignore: empty_catches
         } catch (e) {}
       }
       notifyListeners();

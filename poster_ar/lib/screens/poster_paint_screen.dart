@@ -7,6 +7,7 @@ import '../providers/socket_provider.dart';
 import '../services/drawing_storage_service.dart';
 import '../services/socket_service.dart';
 import 'dart:async';
+import 'package:vibration/vibration.dart';
 
 class PosterPaintScreen extends StatefulWidget {
   final Poster poster;
