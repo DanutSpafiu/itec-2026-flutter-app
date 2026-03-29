@@ -91,6 +91,13 @@ export const initializeWebSockets = (io) => {
       const { posterId, dbUserId, completeLineJSON, color = "#FF6B6B", size = 12 } = finalPayload;
 
       try {
+        if (!posterId || !Array.isArray(completeLineJSON) || completeLineJSON.length === 0) {
+          connectedUser.emit('save_error', {
+            error: 'Invalid drawing payload: posterId and vector array are required.'
+          });
+          return;
+        }
+
         // Get or create the poster
         let poster = await prisma.poster.findFirst({
           where: { name: posterId }
