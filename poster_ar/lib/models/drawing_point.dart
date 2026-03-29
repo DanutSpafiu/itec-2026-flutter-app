@@ -73,9 +73,9 @@ class DrawingPoint {
     bool isNew = false;
     if (json.containsKey('isNewStroke')) {
       final iv = json['isNewStroke'];
-      if (iv is bool)
+      if (iv is bool) {
         isNew = iv;
-      else if (iv is num)
+      } else if (iv is num)
         isNew = iv != 0;
       else if (iv is String)
         isNew = iv.toLowerCase() == 'true';

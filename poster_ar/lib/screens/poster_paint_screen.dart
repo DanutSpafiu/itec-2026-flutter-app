@@ -5,7 +5,6 @@ import '../models/poster.dart';
 import '../providers/auth_provider.dart';
 import '../providers/socket_provider.dart';
 import '../services/drawing_storage_service.dart';
-import '../providers/socket_provider.dart';
 import '../services/socket_service.dart';
 import 'dart:async';
 

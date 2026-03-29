@@ -32,7 +32,7 @@ class _ArScreenState extends State<ArScreen> {
     super.dispose();
   }
 
-  void _navigateToPaintScreen() {
+  Future<void> _navigateToPaintScreen() async {
     final arProvider = context.read<ArProvider>();
     if (arProvider.currentPoster != null) {
       await arProvider.pauseCameraPreview();
