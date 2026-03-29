@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../providers/auth_provider.dart';
 import '../providers/socket_provider.dart';
 import '../providers/ar_provider.dart';
 import '../models/poster.dart';
@@ -27,7 +28,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _checkPermissionsAndConnect() async {
+    final authProvider = context.read<AuthProvider>();
     final socketProvider = context.read<SocketProvider>();
+
+    final currentUser = authProvider.user;
+    if (currentUser != null) {
+      socketProvider.setAuthenticatedUser(
+        name: currentUser.name,
+        dbUserId: currentUser.id,
+      );
+    }
+
     await socketProvider.initialize();
 
     final status = await Permission.camera.status;
@@ -48,6 +59,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _logout() async {
+    final authProvider = context.read<AuthProvider>();
+    final socketProvider = context.read<SocketProvider>();
+    socketProvider.logout();
+    await authProvider.logout();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,6 +80,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: _logout,
+                        icon: const Icon(Icons.logout, color: Colors.white70),
+                        label: const Text(
+                          'Logout',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 20),
                     const Icon(
                       Icons.view_in_ar,

@@ -25,6 +25,18 @@ class SocketProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setAuthenticatedUser({required String name, required String dbUserId}) {
+    _socketService.setAuthenticatedUser(name: name, dbUserId: dbUserId);
+    notifyListeners();
+  }
+
+  void logout() {
+    _socketService.clearAuthenticatedUser();
+    _socketService.disconnect();
+    _isInitialized = false;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _connectionSubscription?.cancel();

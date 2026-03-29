@@ -10,22 +10,22 @@ export const initializeWebSockets = (io) => {
 
     connectedUser.on('register_user', async (userData) => {
       try {
-        userName = userData.name || 'Anonymous';
-        const existingUser = await prisma.user.findFirst({
-          where: { name: userName }
-        });
-        
-        if (existingUser) {
-          userId = existingUser.id;
-        } else {
-          const newUser = await prisma.user.create({
-            data: {
-              email: `${userName.toLowerCase().replace(/\s/g, '')}_${Date.now()}@hackathon.local`,
-              password: 'hackathon123',
-              name: userName
-            }
+        userName = userData?.name || 'Anonymous';
+        const requestedUserId = userData?.dbUserId;
+
+        if (requestedUserId) {
+          const existingUser = await prisma.user.findUnique({
+            where: { id: requestedUserId }
           });
-          userId = newUser.id;
+
+          if (existingUser) {
+            userId = existingUser.id;
+            userName = existingUser.name;
+          } else {
+            userId = connectedUser.id;
+          }
+        } else {
+          userId = connectedUser.id;
         }
         
         connectedUser.emit('user_registered', { userId, userName });
@@ -105,19 +105,16 @@ export const initializeWebSockets = (io) => {
           });
         }
 
-        // Get or create the user
-        let user = await prisma.user.findFirst({
-          where: { id: dbUserId }
+        const effectiveUserId = dbUserId || userId;
+        const user = await prisma.user.findUnique({
+          where: { id: effectiveUserId }
         });
 
         if (!user) {
-          user = await prisma.user.create({
-            data: {
-              email: `user_${Date.now()}@hackathon.local`,
-              password: 'hackathon123',
-              name: 'Anonymous Vandal'
-            }
+          connectedUser.emit('save_error', {
+            error: 'Authentication required before saving drawings.'
           });
+          return;
         }
 
         // Prisma cleanly inserts the arrays into PostgreSQL

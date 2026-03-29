@@ -39,6 +39,8 @@ class SocketService {
   io.Socket? _socket;
   String? _userId;
   String? _userName;
+  String? _authUserName;
+  String? _authDbUserId;
   bool _isConnected = false;
 
   final _connectionController = StreamController<bool>.broadcast();
@@ -82,7 +84,9 @@ class SocketService {
       debugPrint('Socket connected');
       _isConnected = true;
       _connectionController.add(true);
-      registerUser('User_${DateTime.now().millisecondsSinceEpoch}');
+      if (_authUserName != null) {
+        registerUser(_authUserName!, dbUserId: _authDbUserId);
+      }
     });
 
     _socket!.onDisconnect((_) {
@@ -122,8 +126,24 @@ class SocketService {
     });
   }
 
-  void registerUser(String name) {
-    _socket?.emit('register_user', {'name': name});
+  void setAuthenticatedUser({required String name, required String dbUserId}) {
+    _authUserName = name;
+    _authDbUserId = dbUserId;
+
+    if (_isConnected) {
+      registerUser(name, dbUserId: dbUserId);
+    }
+  }
+
+  void clearAuthenticatedUser() {
+    _authUserName = null;
+    _authDbUserId = null;
+    _userId = null;
+    _userName = null;
+  }
+
+  void registerUser(String name, {String? dbUserId}) {
+    _socket?.emit('register_user', {'name': name, 'dbUserId': dbUserId});
   }
 
   void joinPosterRoom(String posterId) {
