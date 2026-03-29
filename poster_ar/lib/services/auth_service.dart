@@ -24,10 +24,7 @@ class AuthService {
     final response = await http.post(
       _uri('/api/auth/login'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-      }),
+      body: jsonEncode({'email': email, 'password': password}),
     );
 
     return _parseAuthResponse(response);
@@ -41,11 +38,7 @@ class AuthService {
     final response = await http.post(
       _uri('/api/auth/register'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'name': name,
-        'email': email,
-        'password': password,
-      }),
+      body: jsonEncode({'name': name, 'email': email, 'password': password}),
     );
 
     return _parseAuthResponse(response);
@@ -55,8 +48,7 @@ class AuthService {
     final body = jsonDecode(response.body) as Map<String, dynamic>;
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      final errorMessage =
-          body['error'] as String? ?? 'Authentication failed.';
+      final errorMessage = body['error'] as String? ?? 'Authentication failed.';
       throw Exception(errorMessage);
     }
 

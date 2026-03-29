@@ -21,11 +21,6 @@ class AuthUser {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'teamId': teamId,
-    };
+    return {'id': id, 'name': name, 'email': email, 'teamId': teamId};
   }
 }

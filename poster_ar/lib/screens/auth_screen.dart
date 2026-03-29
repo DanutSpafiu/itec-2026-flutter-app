@@ -77,10 +77,7 @@ class _AuthScreenState extends State<AuthScreen>
 
   void _showErrorSnack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red.shade700,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
     );
   }
 
@@ -160,8 +157,9 @@ class _AuthScreenState extends State<AuthScreen>
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 labelColor: Colors.white,
-                                unselectedLabelColor:
-                                    Colors.white.withValues(alpha: 0.7),
+                                unselectedLabelColor: Colors.white.withValues(
+                                  alpha: 0.7,
+                                ),
                                 tabs: const [
                                   Tab(text: 'Login'),
                                   Tab(text: 'Sign up'),
